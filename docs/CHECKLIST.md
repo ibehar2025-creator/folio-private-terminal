@@ -40,3 +40,11 @@
 - Production uses PostgreSQL migrations, no default credentials, protected cookies, bounded jobs, persisted caches, secret-free frontend and a reproducible Docker path.
 - Backend financial/security/API tests and frontend build pass; browser covers login, all pages, CRUD, lab, responsive layout and logout/login.
 - README explains setup, credentials, jobs, financial methodology, backups, limitations and exact verification evidence.
+
+
+## Free spot-price tracking
+
+- [x] Explicit Coinbase/Gold API adapters, bounded requests, Decimal valuation, and persisted observations.
+- [x] Metal units default to unconfirmed; pure-metal gram/troy-ounce conversion covered by tests.
+- [x] Bitcoin New York midnight and previous-day observed metal baselines are documented in Holdings. Missing baselines remain null.
+- [x] Tests cover invalid data, baseline gaps, unit confirmation, conversion, supported symbols and preservation of quantities/cost basis.

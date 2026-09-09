@@ -28,6 +28,8 @@ def background_cycle():
             jobs.append("sync")
         if settings.market_provider != "disabled" and settings.market_api_key:
             jobs.append("quote")
+        if settings.spot_quotes_enabled:
+            jobs.append("spot")
         jobs.append("snapshot")
         for job in jobs:
             try:
@@ -166,6 +168,10 @@ def market_job(user_id, kind):
 
 
 def run(job, user_id):
+    if job == "spot":
+        from .spot_quotes import refresh_spot_quotes
+
+        return refresh_spot_quotes(user_id)
     if job == "sync":
         return sync_portfolio(user_id)
     if job == "snapshot":
@@ -183,6 +189,7 @@ def main():
             "sync",
             "snapshot",
             "quote",
+            "spot",
             "history",
             "fundamentals",
             "company",
@@ -202,6 +209,7 @@ def main():
             run(args.job, user)
         return
     intervals = {
+        "spot": 900,
         "sync": get_settings().sync_interval_minutes * 60,
         "quote": 900,
         "snapshot": 86400,

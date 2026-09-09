@@ -61,3 +61,8 @@ Forward-tracking follow-up: all 80 backend tests pass, including mixed-date quot
 Docker is not installed on the build computer. The Docker image was successfully built in GitHub Actions, alongside successful SQLite/PostgreSQL and browser checks. It does not publish an image or deploy anything. [Verified CI run](https://github.com/ibehar2025-creator/folio-private-terminal/actions/runs/34307244355). Docker Compose's complete runtime stack was not launched locally; PostgreSQL runtime behavior was tested separately on the actual database engine.
 
 No hosting service, public portfolio endpoint, messaging channel or trading connection has been configured.
+
+
+### Free spot-price release
+
+Validated on the currently deployed backend baseline: 95 tests pass, including 15 focused spot-price tests; TypeScript and Vite production build pass. Live Coinbase, XAU and XAG adapters returned valid timestamped quotes. Coinbase returned the exact New York midnight baseline; metals correctly returned no baseline on their first observation. Ruff passes for the new module and tests. Unconfirmed metal units allow saving observations but preserve holding valuations. No schema migrations or new dependencies are required.

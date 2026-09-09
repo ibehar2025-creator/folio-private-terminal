@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     session_hours: int = Field(default=12, ge=1, le=168)
     demo_mode: bool = False
     background_jobs: bool = False
+    spot_quotes_enabled: bool = False
+    metal_quantity_unit: Literal["unconfirmed", "troy_ounce", "gram"] = "unconfirmed"
     google_application_credentials: str = ""
     google_sheet_id: str = ""
     google_folder_id: str = ""

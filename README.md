@@ -270,3 +270,14 @@ Restore a SQLite backup by stopping API/worker, preserving the current database 
 This is a long-only, USD personal terminal, not a brokerage or tax engine. Transactions are a ledger; Google remains authoritative for current holdings. There is no automatic order execution, tax-lot accounting, options/shorts, live FX, ETF constituent look-through, push/email alerts or guaranteed future income projection. Alerts are in-app threshold indicators. Exact intraday/long historical windows appear only when the provider/snapshots supply enough observations. Third-party credentials and provider entitlements are required for live data; unavailable metrics remain explicit.
 
 Useful future work: verified broker transaction imports and tax lots, adjusted total-return benchmarks, FX-aware accounting, snapshot close scheduling by exchange, additional market-data providers, and explicit opt-in notification channels. These extend the current architecture without replacing the sheet source of truth.
+
+
+### Free Bitcoin and metal spot tracking
+
+Set `SPOT_QUOTES_ENABLED=true` for public Coinbase Exchange Bitcoin prices and Gold API gold/silver spot marks. No additional API key or subscription is required. Enable `BACKGROUND_JOBS=true` to refresh while the server runs. Free hosting that sleeps cannot guarantee unattended daily captures. Run `python -m app.jobs spot` for a manual refresh.
+
+Set `METAL_QUANTITY_UNIT=troy_ounce` or `gram` only after confirming that source quantities represent pure-metal content in that unit. The default `unconfirmed` preserves existing metal marks. Valuations exclude dealer premiums and selling fees. Explicit symbol allowlists leave unrelated crypto and custom holdings alone.
+
+Bitcoin change compares with the last completed minute before New York midnight, cached once per day. Metals compare with the last saved spot observation from the previous New York calendar day. Missing baselines remain null on the first day or after a capture gap. Persisted `-observed` price series are observed marks, not official exchange closes. Invalid/stale feeds preserve prior values; quantities and cost basis never change.
+
+Sources: https://docs.cdp.coinbase.com/api-reference/exchange-api/rest-api/products/get-product-candles and https://gold-api.com/docs

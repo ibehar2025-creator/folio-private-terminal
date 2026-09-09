@@ -480,6 +480,17 @@ export function Holdings() {
           </button>
         }
       />
+      {p.holdings.some((h) =>
+        ["crypto", "gold", "silver"].includes(h.asset_type),
+      ) && (
+        <p className="footnote">
+          Bitcoin spot: Coinbase; daily change starts at New York midnight. Gold
+          and silver spot: Gold API; daily change compares with the last saved
+          price on the previous New York calendar day and stays blank without
+          that baseline. Metal marks estimate pure-metal spot value, excluding
+          dealer premiums and selling fees.
+        </p>
+      )}
       <div className="metrics-strip three">
         <Metric label="Portfolio value" value={money(p.total_value)} />
         <Metric
