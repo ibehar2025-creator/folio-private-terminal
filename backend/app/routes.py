@@ -519,6 +519,7 @@ def settings(user: CurrentUser, db: DB):
         "currency": "USD",
         "market_provider": "demo" if c.demo_mode else c.market_provider,
         "market_configured": bool(c.market_api_key),
+        "history_provider": c.history_source,
         "ai_configured": bool(c.ai_api_key and c.ai_base_url and c.ai_model),
         "google_configured": bool(c.google_application_credentials),
         "demo": c.demo_mode,

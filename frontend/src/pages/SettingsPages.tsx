@@ -246,6 +246,24 @@ export function SettingsPage() {
             </div>
           </div>
           <div className="settings-row">
+            <Database size={20} />
+            <div>
+              <strong>
+                Price history ·{" "}
+                {s.history_provider === "yahoo"
+                  ? "Yahoo Finance"
+                  : s.history_provider}
+              </strong>
+              <p>
+                {s.history_provider === "yahoo"
+                  ? "Free daily history · no API key needed"
+                  : s.demo
+                    ? "Fictional demonstration history"
+                    : "Uses your market-data plan"}
+              </p>
+            </div>
+          </div>
+          <div className="settings-row">
             <KeyRound size={20} />
             <div>
               <strong>Optional AI analysis</strong>

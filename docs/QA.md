@@ -1,5 +1,11 @@
 # Verification and final review
 
+## Free historical prices update
+
+Added an independent, no-key Yahoo Finance daily history adapter. Local backend suite: **75 passed**; TypeScript/Vite build passed. Live AMD and SPY calls each returned and persisted **2,512 daily observations**, September 9, 2016 through September 8, 2026. The authenticated AMD page was inspected in Chrome with both one-year and MAX date ranges, and displayed the historical chart and Yahoo source label. New tests cover source-specific cache keys, stale fallback, missing prices, invalid/cross-currency series, exchange dates, unfinished sessions, US share-class symbols, price-versus-adjusted-close semantics, benchmark routing and separate Finnhub error remedies. No new API key, registration or paid subscription was required. Finnhub remains the quote/research provider.
+
+The initial-build verification below remains the baseline; GitHub runs validate this update on both databases and in the browser/container jobs.
+
 Verified locally on September 8, 2026 (America/Chicago), using Windows, Python, Node 24, Chrome and a dedicated PostgreSQL 17.11 instance. Only fictional fixtures are committed.
 
 ## Executed checks

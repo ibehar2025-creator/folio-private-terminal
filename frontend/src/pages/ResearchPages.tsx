@@ -29,6 +29,7 @@ import {
   Periods,
   inPeriod,
   TimeChart,
+  colors,
   Modal,
   Field,
 } from "../ui";
@@ -849,11 +850,33 @@ export function ResearchPage() {
             {history.isLoading ? (
               <Loading />
             ) : history.data?.available ? (
-              <TimeChart data={data} height={285} />
+              <TimeChart
+                data={data}
+                height={285}
+                series={[{ key: "value", name: sym, color: colors[0] }]}
+              />
             ) : (
               <Empty title="Price history unavailable">
                 {history.data?.reason ?? history.error?.message}
               </Empty>
+            )}
+            {history.data?.available && (
+              <p className="chart-note">
+                {history.data.label ??
+                  `${history.data.provider} · daily history`}{" "}
+                ·{" "}
+                {data.length
+                  ? `${dateLabel(data[0].date)} – ${dateLabel(data[data.length - 1].date)}`
+                  : "No observations in this period"}
+                {history.data.methodology
+                  ? ` · ${String(history.data.methodology)}`
+                  : ""}
+              </p>
+            )}
+            {history.data?.stale && (
+              <Notice tone="warning">
+                Showing cached history · {history.data.warning}
+              </Notice>
             )}
             <div className="research-key-stats">
               <Metric

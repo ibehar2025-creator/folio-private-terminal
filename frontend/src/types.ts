@@ -212,6 +212,7 @@ export interface Settings {
   currency: string;
   market_provider: string;
   market_configured: boolean;
+  history_provider: string;
   ai_configured: boolean;
   google_configured: boolean;
   demo: boolean;

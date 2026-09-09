@@ -28,6 +28,7 @@ Browser: React + TypeScript + React Query + Recharts
           ├─ PostgreSQL (production) / SQLite (local)
           ├─ GoogleSheetsSource (read-only, batch reads)
           ├─ MarketDataProvider → Finnhub / fictional demo
+          ├─ Historical prices → Yahoo Finance public daily chart feed (no key)
           └─ optional OpenAI-compatible AI provider
        Separate worker → sync / prices / snapshots / fundamentals / event jobs
 ```
@@ -95,6 +96,7 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 | `SYNC_INTERVAL_MINUTES` | Worker sheet-sync interval, default 15 minutes |
 | `MARKET_PROVIDER` | `disabled` or `finnhub` |
 | `MARKET_API_KEY` | Provider key; server-side only |
+| `HISTORY_PROVIDER` | `yahoo` (default): free no-key daily prices, independent of Finnhub; `market`: use the main provider's history entitlement |
 | `MARKET_REQUESTS_PER_MINUTE` | Conservative shared API/worker request ceiling, default 6; adjust to your vendor plan |
 | `RISK_FREE_RATE` | Annual decimal rate for Sharpe/downside calculations, default 0.04; an assumption, not a live market rate |
 | `AI_BASE_URL`, `AI_MODEL`, `AI_API_KEY` | Optional OpenAI-compatible chat-completions service; base URL ends before `/chat/completions` |
@@ -130,7 +132,13 @@ Validation and sync behavior:
 
 ## Market data and research
 
-Set `MARKET_PROVIDER=finnhub` and `MARKET_API_KEY`. The adapter covers symbol/company search, quotes, daily history, company profile, available basic financial metrics, historical/upcoming earnings, dividends, news and analyst targets. **Coverage and entitlements depend on the current vendor plan**; historical candles, dividends or analyst data may require paid access. The UI marks unsupported data unavailable and does not substitute fabricated values.
+Set `MARKET_PROVIDER=finnhub` and `MARKET_API_KEY` for symbol/company search, quotes, company profile, available basic financial metrics, historical/upcoming earnings, dividends, news and analyst targets. **Coverage and entitlements depend on the current vendor plan**; dividends or analyst data may require paid access. The UI marks unsupported data unavailable and does not substitute fabricated values. Authentication failures, plan restrictions and rate limits now have separate actionable messages.
+
+Historical charts use `HISTORY_PROVIDER=yahoo` by default. This free public Yahoo Finance chart feed needs no registration or API key and is independent of the Finnhub quote/research connection. It fetches up to ten years of available **daily closing prices**, stores them in the database, and caches the response for 24 hours. Research displays the source and date range. The historical-price job and SPY/correlation calculations use the same configured history source, so an old Finnhub error cache cannot block Yahoo charts.
+
+Yahoo daily Close prices include the provider's stock-split adjustments; the app does **not** substitute dividend-adjusted Adj Close or label the result total return. Currency and ticker mismatches, invalid numbers and malformed series are rejected; missing observations are not interpolated. Dates follow the exchange timezone, and the current session is omitted until its regular close. Known US share-class aliases such as BRK.B map to BRK-B. Non-USD series are unavailable because this app does not perform FX conversion.
+
+This is a public, unofficial interface suited to this private personal workspace, with no availability guarantee. It can change or throttle access; cached history remains usable with a stale warning. The adapter makes at most 30 requests per minute across processes, never borrows cookies/keys, and does not attempt to bypass restricted responses. Yahoo is not used for portfolio holdings or current quotes. Daily data does not supply intraday candles: select 5D or longer for a useful stock chart. To use paid Finnhub history instead, set `HISTORY_PROVIDER=market` and obtain Stock Candles entitlement. [Yahoo historical data](https://help.yahoo.com/kb/sln2311.html), [adjusted-close explanation](https://help.yahoo.com/kb/SLN28256.html).
 
 Quote cache: 120 seconds. Company/fundamentals/history: 24 hours. Events/news/other research: one hour. Unsupported datasets receive a five-minute negative cache. Provider failures retain successful cached values with a stale warning. Historical prices and slow-changing datasets are persisted. Database-coordinated request slots pace API and worker processes together; a single API process and one scheduler are recommended for this personal app.
 
@@ -247,6 +255,7 @@ Restore a SQLite backup by stopping API/worker, preserving the current database 
 - **A source row disappeared after a failed sync:** rejection should preserve prior holdings; check `sync_runs` and do not overwrite the source. Tests guard this invariant.
 - **Dash for returns/risk:** inspect cash-flow completeness, available observations, quote dates and benchmark coverage. Verify actual flows rather than inventing zeros.
 - **Quotes unavailable/stale:** check API key, provider plan, symbol coverage and rate limits. Some advanced endpoints require additional entitlement.
+- **History unavailable:** use `HISTORY_PROVIDER=yahoo` for free daily history. A Finnhub 403 means its plan lacks the requested dataset, not necessarily an invalid key. Yahoo errors can mean unavailable symbols, non-USD prices or temporary feed restrictions; its messages distinguish these cases. Restart the API after changing configuration.
 - **No recent events:** run earnings/dividend jobs. Empty news or analyst panels can be legitimate provider coverage limitations.
 - **Frontend blank or old assets:** rebuild `frontend/dist`, restart the API and reload. The UI includes a recovery error boundary.
 - **Secure cookies not sent locally:** use development mode on HTTP; production must run through the configured HTTPS origin.

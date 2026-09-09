@@ -130,8 +130,7 @@ def performance(db, user_id):
         select(HistoricalPrice)
         .where(
             HistoricalPrice.symbol == "SPY",
-            HistoricalPrice.provider
-            == ("demo" if get_settings().demo_mode else get_settings().market_provider),
+            HistoricalPrice.provider == get_settings().history_source,
         )
         .order_by(HistoricalPrice.date)
     ).all()
@@ -180,7 +179,7 @@ def analytics(db, user_id):
     returns = (
         [float(r["return"]) for r in perf["twr"]["daily"]] if daily_frequency else []
     )
-    provider = "demo" if get_settings().demo_mode else get_settings().market_provider
+    provider = get_settings().history_source
     prices = db.scalars(
         select(HistoricalPrice).where(HistoricalPrice.provider == provider)
     ).all()

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     market_provider: Literal["disabled", "finnhub"] = "disabled"
     market_api_key: str = ""
     market_requests_per_minute: int = Field(default=6, ge=1, le=600)
+    history_provider: Literal["yahoo", "market"] = "yahoo"
     ai_base_url: str = ""
     ai_api_key: str = ""
     ai_model: str = ""
@@ -27,6 +28,16 @@ class Settings(BaseSettings):
     @property
     def secure_cookies(self):
         return self.environment == "production"
+
+    @property
+    def history_source(self):
+        if self.demo_mode:
+            return "demo"
+        return (
+            self.market_provider
+            if self.history_provider == "market"
+            else self.history_provider
+        )
 
 
 @lru_cache

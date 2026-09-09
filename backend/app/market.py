@@ -82,9 +82,20 @@ class FinnhubProvider:
                     if attempt < 2:
                         time.sleep(2**attempt)
                         continue
-                if response.status_code in {401, 403, 429}:
+                if response.status_code == 401:
                     raise ProviderUnavailable(
-                        "Provider credentials, plan entitlement, or rate limit prevents this dataset"
+                        "Finnhub rejected the API key. Check MARKET_API_KEY on the server."
+                    )
+                if response.status_code == 403:
+                    message = (
+                        "Finnhub's Stock Candles endpoint requires a plan with historical-price access. Use HISTORY_PROVIDER=yahoo for free daily history."
+                        if path == "stock/candle"
+                        else "Your Finnhub plan does not include this dataset. Other supported data remains available."
+                    )
+                    raise ProviderUnavailable(message)
+                if response.status_code == 429:
+                    raise ProviderUnavailable(
+                        "Finnhub's request limit was reached. Wait and retry; cached data remains available."
                     )
                 response.raise_for_status()
                 payload = response.json()
@@ -305,7 +316,11 @@ def provider():
 
 def cached(db, kind, symbol, refresh=False):
     config = get_settings()
-    name = "demo" if config.demo_mode else config.market_provider
+    name = (
+        config.history_source
+        if kind == "history"
+        else ("demo" if config.demo_mode else config.market_provider)
+    )
     key = f"{name}:{kind}:{symbol}"
     entry = db.get(MarketCache, key)
     if entry and utc(entry.expires_at) > now() and not refresh:
@@ -315,7 +330,12 @@ def cached(db, kind, symbol, refresh=False):
             "provider": name,
         }
     try:
-        adapter = provider()
+        if kind == "history" and name == "yahoo":
+            from .history_data import YahooHistoryProvider
+
+            adapter = YahooHistoryProvider()
+        else:
+            adapter = provider()
         method = getattr(adapter, "search" if kind == "search" else "get_" + kind, None)
         if method is None:
             raise ProviderUnavailable(

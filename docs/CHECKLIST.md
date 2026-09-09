@@ -24,6 +24,7 @@
 - [x] Clean private GitHub repository uploaded; no hosting connected. SQLite, PostgreSQL, browser and Docker-build CI jobs all passed.
 
 ## Acceptance criteria
+- [x] Add free no-key daily historical prices independently of Finnhub, with source-aware caching, benchmark routing, validation and regression tests.
 - An unauthenticated user cannot retrieve private data; CSRF, expired sessions, invalid login and logout are tested.
 - Fictional seed is opt-in, visibly labeled and never mixed with live holdings. No real financial records enter Git.
 - Observed sheet supports misspelled Quanity, multiple accounts, accountless positions, college assets with no share count, gold/silver, separate cash, bad formula diagnostics and partial historical snapshots.
