@@ -1,0 +1,77 @@
+name: Validate private terminal
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        database: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: folio
+          POSTGRES_PASSWORD: ci-only-test-password
+          POSTGRES_DB: folio_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U folio -d folio_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r backend/requirements.lock
+      - run: ruff check backend/app backend/tests --select F
+      - name: Test SQLite
+        if: matrix.database == 'sqlite'
+        working-directory: backend
+        run: python -m pytest -q
+      - name: Migrate and test PostgreSQL
+        if: matrix.database == 'postgres'
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+psycopg://folio:ci-only-test-password@127.0.0.1:5432/folio_test
+          TEST_DATABASE_URL: postgresql+psycopg://folio:ci-only-test-password@127.0.0.1:5432/folio_test
+        run: |
+          python -m alembic upgrade head
+          python -m pytest -q
+          python -m alembic check
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install -g pnpm@11.19.0
+      - run: pip install -r backend/requirements.lock
+      - run: pnpm install --frozen-lockfile && pnpm build
+        working-directory: frontend
+      - run: pnpm exec playwright install --with-deps chrome
+        working-directory: frontend
+      - name: Start private fictional demo
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///./data/demo.db
+          DEMO_MODE: 'true'
+          APP_ORIGIN: http://127.0.0.1:8000
+        run: |
+          python -m alembic upgrade head
+          python -m app.demo_setup
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/folio.log 2>&1 &
+          for attempt in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/health && break || sleep 1; done
+      - run: pnpm test:e2e
+        working-directory: frontend
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t folio-validation .
+  # Validation only. No hosting or deployment job.

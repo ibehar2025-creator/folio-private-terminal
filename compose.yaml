@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: folio
+      POSTGRES_USER: folio
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U folio -d folio"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+  app:
+    build: .
+    environment: &app_environment
+      DATABASE_URL: postgresql+psycopg://folio:${POSTGRES_PASSWORD}@db:5432/folio
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      APP_ORIGIN: ${APP_ORIGIN:-http://127.0.0.1:8000}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-127.0.0.1,localhost}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-}
+      GOOGLE_SHEET_ID: ${GOOGLE_SHEET_ID:-}
+      GOOGLE_FOLDER_ID: ${GOOGLE_FOLDER_ID:-}
+      MARKET_PROVIDER: ${MARKET_PROVIDER:-disabled}
+      MARKET_API_KEY: ${MARKET_API_KEY:-}
+      MARKET_REQUESTS_PER_MINUTE: ${MARKET_REQUESTS_PER_MINUTE:-6}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+      SYNC_INTERVAL_MINUTES: ${SYNC_INTERVAL_MINUTES:-15}
+      RISK_FREE_RATE: ${RISK_FREE_RATE:-0.04}
+      SESSION_HOURS: ${SESSION_HOURS:-12}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./credentials:/run/secrets:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 15s
+      retries: 5
+    restart: unless-stopped
+  worker:
+    build: .
+    environment: *app_environment
+    command: ["python", "-m", "app.jobs", "worker"]
+    volumes:
+      - ./credentials:/run/secrets:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  postgres_data:
