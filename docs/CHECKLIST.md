@@ -21,7 +21,7 @@
 - [x] 12. Responsive polish, meaningful tests, browser QA, security review and documentation.
 - [x] Product review completed; meaningful issues fixed.
 - [x] Engineering review completed; meaningful issues fixed.
-- [ ] Clean private GitHub repository uploaded; no hosting connected.
+- [x] Clean private GitHub repository uploaded; no hosting connected. SQLite, PostgreSQL, browser and Docker-build CI jobs all passed.
 
 ## Acceptance criteria
 - An unauthenticated user cannot retrieve private data; CSRF, expired sessions, invalid login and logout are tested.

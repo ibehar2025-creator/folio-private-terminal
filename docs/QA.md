@@ -16,6 +16,8 @@ Verified locally on September 8, 2026 (America/Chicago), using Windows, Python, 
 | Chrome 390px mobile journey | Passed, including page-level overflow checks |
 | Browser errors | No unexpected HTTP failures, runtime exceptions or console errors in the complete fictional journey |
 | Actual source ingestion | Read-only connector export imported twice; 25 holdings, 21 realized records, five source snapshots and one new observed snapshot; no duplicates |
+| Actual-source browser smoke | Read-only check passed across Overview and eight data pages; verified 25 holdings, unknown unverified return, logout authorization and no runtime errors |
+| GitHub CI on Linux | SQLite, PostgreSQL, browser and Docker image build all passed for implementation commit `39acecf4` |
 
 The backend suite covers accounting, flow-aware performance, benchmarks, risk, scenarios, simulator compounding, actual source conventions, duplicates, malformed rows, transactional rejection, sessions, CSRF, origins, login throttling, authorization, CRUD, caching, optional provider data and event rescheduling. Test credentials and databases are isolated from local real configuration. Two upstream test-client deprecation warnings remain; they are not runtime failures.
 
@@ -48,6 +50,6 @@ The exact native Portfolio sheet was inspected with connected Google access; its
 
 No market-data or AI key was supplied. Their configured live network paths cannot be claimed as exercised against a paid account. Provider normalization, cache failures and unavailable responses are tested; the UI uses explicit unavailable states. Complete historical cash flows are absent in the real source, so unverified total return, TWR and derived risk metrics remain unavailable until their evidence requirements are met. No historical positions are invented.
 
-Docker is not installed on the build computer. A container-build validation job is included in GitHub Actions, alongside SQLite/PostgreSQL and browser checks. It does not publish an image or deploy anything. Repository CI results are reported separately from local evidence.
+Docker is not installed on the build computer. The Docker image was successfully built in GitHub Actions, alongside successful SQLite/PostgreSQL and browser checks. It does not publish an image or deploy anything. [Verified CI run](https://github.com/ibehar2025-creator/folio-private-terminal/actions/runs/34307244355). Docker Compose's complete runtime stack was not launched locally; PostgreSQL runtime behavior was tested separately on the actual database engine.
 
 No hosting service, public portfolio endpoint, messaging channel or trading connection has been configured.

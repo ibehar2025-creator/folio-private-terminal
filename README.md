@@ -4,6 +4,8 @@ A separate, single-owner investment workspace built with React, TypeScript, Fast
 
 This project is independent of any earlier portfolio prototype. It does not read or modify sibling projects.
 
+Private repository: [ibehar2025-creator/folio-private-terminal](https://github.com/ibehar2025-creator/folio-private-terminal). The initial implementation passed all four GitHub validation jobs: SQLite, PostgreSQL, Chrome browser journeys and Docker image build. No hosting is connected. See the [verification report](docs/QA.md).
+
 ## What is included
 
 - **Overview:** total valuation, dated daily P/L, verified contribution-based total return, unrealized gain, interactive valuation/benchmark charts, allocation, measured contributors, upcoming events, factual brief and optional AI interpretation.
@@ -210,7 +212,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-Backend tests use an isolated temporary SQLite database unless `TEST_DATABASE_URL` explicitly names `folio_test`. They drop/recreate tables **only in that dedicated test database**. Browser tests require the locally running fictional demo app and installed Chrome; they read the ignored `backend/data/demo-login.json` or `E2E_USERNAME`/`E2E_PASSWORD`. Override `E2E_BASE_URL` when needed. Browser tests make and remove fictional watchlist/journal/event/scenario records and edit a demo thesis. Never point browser tests at the real portfolio.
+Backend tests use an isolated temporary SQLite database unless `TEST_DATABASE_URL` explicitly names `folio_test`. They drop/recreate tables through Alembic **only in that dedicated test database**. Browser tests require the locally running fictional demo app and installed Chrome; they read the ignored `backend/data/demo-login.json` or `E2E_USERNAME`/`E2E_PASSWORD`. Override `E2E_BASE_URL` when needed. Browser tests make and remove fictional watchlist/journal/event/scenario/ledger records and edit a demo thesis and cash-flow annotation. Never point browser tests at the real portfolio.
 
 The suite covers financial arithmetic, cash-flow adjustments, allocations, benchmarks, risk, scenarios, simulator math, source parsing, duplicates, malformed rows, atomic rejection, authentication, permissions, caches, event rescheduling and persistence. Browser QA covers login, Overview/chart, holdings filters, watchlist persistence, search/research/thesis, Performance, Analytics, Calendar CRUD, Lab, Simulator, Journal CRUD, secondary pages, command palette, logout/login, and 390px navigation/overflow. See [QA report](docs/QA.md) for the final verified results and review findings.
 
