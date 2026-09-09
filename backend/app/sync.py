@@ -215,6 +215,16 @@ def take_snapshot(user_id):
             )
             if not item:
                 item = Snapshot(user_id=user_id, date=day, source="daily")
+                same_day = db.scalar(
+                    select(Snapshot).where(
+                        Snapshot.user_id == user_id,
+                        Snapshot.date == day,
+                        Snapshot.source == "sheets",
+                    )
+                )
+                if same_day:
+                    item.external_flow = same_day.external_flow
+                    item.contributions = same_day.contributions
                 db.add(item)
             item.total_value, item.cash, item.cost_basis = (
                 p["total_value"],

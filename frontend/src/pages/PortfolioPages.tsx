@@ -167,14 +167,16 @@ export function Overview() {
     date: s.date,
     value: n(s.total_value),
     return:
-      returns.find((r) => r.date === s.date)?.cumulative == null
-        ? null
-        : n(returns.find((r) => r.date === s.date)!.cumulative),
+      s.date === performance.data?.twr.start_date
+        ? 0
+        : returns.find((r) => r.date === s.date)?.cumulative == null
+          ? null
+          : n(returns.find((r) => r.date === s.date)!.cumulative),
     benchmark: s.benchmark_return == null ? null : n(s.benchmark_return),
   }));
   const movers = [...p.holdings]
-    .filter((h) => h.asset_type !== "cash")
-    .sort((a, b) => Math.abs(n(b.daily_change)) - Math.abs(n(a.daily_change)))
+    .filter((h) => h.asset_type !== "cash" && h.quoted_change != null)
+    .sort((a, b) => Math.abs(n(b.quoted_change)) - Math.abs(n(a.quoted_change)))
     .slice(0, 4);
   return (
     <>
@@ -202,11 +204,11 @@ export function Overview() {
               <div className="label">TOTAL PORTFOLIO VALUE</div>
               <div className="hero-value">{money(p.total_value)}</div>
               <div className="hero-change">
-                <Change value={p.daily_change} />
+                <Change value={p.quoted_change} />
                 <span className="muted">
-                  {p.daily_change == null
-                    ? "Today’s P/L unavailable"
-                    : `(${pct(p.daily_pct, true)}) today`}
+                  {p.quoted_change == null
+                    ? "Daily P/L awaiting price refresh"
+                    : `(${pct(p.quoted_pct, true)}) · ${dateLabel(p.quoted_day)} · ${p.unquoted_positions ? "quoted assets" : "all invested assets"}`}
                 </span>
               </div>
             </div>
@@ -214,6 +216,14 @@ export function Overview() {
               USD <ChevronDown size={11} />
             </span>
           </div>
+          {p.quoted_change != null && (
+            <p className="chart-note">
+              {p.quoted_positions} positions · {pct(p.quoted_coverage)} of
+              invested value covered.
+              {p.unquoted_positions > 0 &&
+                ` ${p.unquoted_positions} positions have no quote for this date and are excluded. Percentage return uses only covered positions.`}
+            </p>
+          )}
           <div className="hero-stats">
             <div>
               <span>Total investment gain</span>
@@ -232,7 +242,7 @@ export function Overview() {
             Open positions: <Change value={p.unrealized_gain} /> (
             {pct(p.cost_basis_return, true)}) unrealized.
             {p.total_gain == null &&
-              " Total return needs verified cumulative contributions."}
+              " Lifetime returns need historical contributions. Start tracking cash flows in Performance to measure returns going forward."}
           </p>
           <div className="chart-toolbar">
             <div className="chart-tabs">
@@ -259,6 +269,12 @@ export function Overview() {
           ) : chartMode === "return" && performance.data?.twr.return == null ? (
             <Empty title="Return comparison needs verified cash flows">
               {performance.data?.twr.reason}
+              <button
+                className="button"
+                onClick={() => navigate("/performance")}
+              >
+                Track cash flows
+              </button>
             </Empty>
           ) : (
             <TimeChart
@@ -289,6 +305,9 @@ export function Overview() {
               ? `${dateLabel(snapshots[0].date)} – ${dateLabel(snapshots[snapshots.length - 1].date)} · `
               : ""}
             Recorded valuations
+            {chartMode === "return" && performance.data?.twr.start_date
+              ? ` · Return tracking since ${dateLabel(performance.data.twr.start_date)}`
+              : ""}
             {chartMode === "return" ? " · SPY excludes dividends" : ""}. No
             interpolated positions.
           </div>
@@ -339,7 +358,7 @@ export function Overview() {
       <div className="two-column">
         <Panel
           title="What’s moving your portfolio"
-          subtitle="Largest daily dollar impacts · current positions"
+          subtitle={`Largest measured dollar impacts${p.quoted_day ? ` · ${dateLabel(p.quoted_day)}` : ""}`}
           action={
             <TextLink onClick={() => navigate("/holdings")}>
               All holdings
@@ -347,6 +366,11 @@ export function Overview() {
           }
         >
           <div className="mover-list">
+            {!movers.length && (
+              <Empty title="Awaiting dated quotes">
+                Price refresh will populate measured daily movers here.
+              </Empty>
+            )}
             {movers.map((h, i) => (
               <button
                 className="mover-row"
@@ -372,13 +396,9 @@ export function Overview() {
                 </span>
                 <span className="mover-value">
                   <strong>
-                    <Change value={h.daily_change} />
+                    <Change value={h.quoted_change} />
                   </strong>
-                  <small>
-                    {h.daily_change == null
-                      ? "Dated quote needed"
-                      : pct(h.daily_pct, true)}
-                  </small>
+                  <small>{dateLabel(p.quoted_day)}</small>
                 </span>
               </button>
             ))}
@@ -626,9 +646,11 @@ export function PerformancePage() {
     value: n(s.total_value),
     contributions: s.contributions == null ? null : n(s.contributions),
     return:
-      p.twr.daily.find((x) => x.date === s.date)?.cumulative == null
-        ? null
-        : n(p.twr.daily.find((x) => x.date === s.date)!.cumulative),
+      s.date === p.twr.start_date
+        ? 0
+        : p.twr.daily.find((x) => x.date === s.date)?.cumulative == null
+          ? null
+          : n(p.twr.daily.find((x) => x.date === s.date)!.cumulative),
     benchmark: s.benchmark_return == null ? null : n(s.benchmark_return),
   }));
   return (
@@ -645,7 +667,7 @@ export function PerformancePage() {
           detail={
             p.twr.return == null
               ? "Cash-flow history incomplete"
-              : "All recorded history"
+              : `${dateLabel(p.twr.start_date)} – ${dateLabel(p.twr.end_date)}`
           }
         />
         <Metric
@@ -692,7 +714,7 @@ export function PerformancePage() {
                 ? [
                     {
                       key: "return",
-                      name: "Portfolio TWR (since inception)",
+                      name: "Portfolio TWR (verified period)",
                       color: colors[0],
                     },
                     {
@@ -720,7 +742,11 @@ export function PerformancePage() {
         )}
         <p className="chart-note">
           Changing the window crops the observation dates; cumulative return
-          series retain their original inception baseline.
+          series retain their verified starting baseline.
+          {p.twr.start_date &&
+            ` Verified return period: ${dateLabel(p.twr.start_date)} – ${dateLabel(p.twr.end_date)}.`}
+          {p.twr.excluded_snapshots > 0 &&
+            " Other valuations remain in the value chart; incomplete cash-flow intervals are excluded from this return period."}
         </p>
       </Panel>
       <div className="two-column">

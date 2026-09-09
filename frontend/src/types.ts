@@ -13,6 +13,7 @@ export interface Holding {
   cost_basis: Num;
   daily_change: Num;
   source_daily_change: Num;
+  quoted_change: Num;
   as_of: string;
   source: string;
   weight: Num;
@@ -39,6 +40,12 @@ export interface Portfolio {
   daily_change: Num;
   daily_pct: Num;
   known_daily_change: Num;
+  quoted_day: string | null;
+  quoted_change: Num;
+  quoted_pct: Num;
+  quoted_coverage: Num;
+  quoted_positions: number;
+  unquoted_positions: number;
   daily_coverage: Num;
   realized_gain: Num;
   dividends: Num;
@@ -71,7 +78,14 @@ export interface ReturnPoint {
 export interface Performance {
   weeks?: { week: string; return: Num }[];
   snapshots: Snapshot[];
-  twr: { return: Num; daily: ReturnPoint[]; reason: string | null };
+  twr: {
+    return: Num;
+    daily: ReturnPoint[];
+    reason: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    excluded_snapshots: number;
+  };
   months: { month: string; return: Num }[];
   best_day: ReturnPoint | null;
   worst_day: ReturnPoint | null;
@@ -209,6 +223,7 @@ export interface SyncStatus {
   interval_minutes: number;
 }
 export interface Settings {
+  background_jobs: boolean;
   currency: string;
   market_provider: string;
   market_configured: boolean;

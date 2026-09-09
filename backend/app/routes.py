@@ -85,6 +85,13 @@ def get_snapshots(user: CurrentUser, db: DB):
     return history(db, user.id)
 
 
+@router.post("/snapshots")
+def capture_snapshot(user: CurrentUser):
+    from .sync import take_snapshot
+
+    return take_snapshot(user.id)
+
+
 @router.put("/snapshots/{id}/flow")
 def verify_flow(id: int, body: FlowInput, user: CurrentUser, db: DB):
     item = owned(db, Snapshot, id, user.id)
@@ -523,6 +530,7 @@ def settings(user: CurrentUser, db: DB):
         "ai_configured": bool(c.ai_api_key and c.ai_base_url and c.ai_model),
         "google_configured": bool(c.google_application_credentials),
         "demo": c.demo_mode,
+        "background_jobs": c.background_jobs and not c.demo_mode,
         "secure_cookies": c.secure_cookies,
         "session_hours": c.session_hours,
         "database": "PostgreSQL"

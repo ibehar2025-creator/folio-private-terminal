@@ -34,6 +34,10 @@ def factual_summary(db, user_id):
         facts.append(
             "Today's complete portfolio P/L is unavailable because one or more positions lack a dated daily quote."
         )
+    if p["quoted_change"] is not None:
+        facts.append(
+            f"Quotes dated {p['quoted_day']} show ${p['quoted_change']:+,.2f} of price movement across {p['quoted_positions']} positions; {p['unquoted_positions']} other invested positions are excluded."
+        )
     if not facts:
         facts.append("Connect your source sheet to begin a factual portfolio review.")
     return {

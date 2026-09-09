@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     allowed_hosts: str = "127.0.0.1,localhost,testserver"
     session_hours: int = Field(default=12, ge=1, le=168)
     demo_mode: bool = False
+    background_jobs: bool = False
     google_application_credentials: str = ""
     google_sheet_id: str = ""
     google_folder_id: str = ""

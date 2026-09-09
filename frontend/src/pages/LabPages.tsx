@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   FlaskConical,
   Play,
@@ -543,8 +544,27 @@ function Simulator() {
 }
 
 export function ReplayPage() {
+  const toast = useToast(),
+    qc = useQueryClient();
   const query = useData<Snapshot[]>("/snapshots"),
-    [index, setIndex] = useState(-1);
+    [index, setIndex] = useState(-1),
+    [saving, setSaving] = useState(false),
+    [error, setError] = useState("");
+  const capture = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await api("/snapshots", "POST");
+      await query.refetch();
+      await qc.invalidateQueries({ queryKey: ["/performance"] });
+      setIndex(-1);
+      toast("Current snapshot saved");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
   if (query.isLoading) return <Loading />;
   if (query.error) return <ErrorState error={query.error} />;
   const list = query.data ?? [],
@@ -555,7 +575,13 @@ export function ReplayPage() {
         eyebrow="REVISIT THE JOURNEY"
         title="Portfolio replay"
         description="An honest view of recorded history. No invented past positions."
+        action={
+          <button className="button" disabled={saving} onClick={capture}>
+            {saving ? "Saving…" : "Save current snapshot"}
+          </button>
+        }
       />
+      {error && <Notice>{error}</Notice>}
       {!s ? (
         <Empty title="Your history starts with the first snapshot">
           Run the snapshot job or synchronize dated valuations from your sheet.

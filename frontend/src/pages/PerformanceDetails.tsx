@@ -48,6 +48,14 @@ export function PerformanceDetails({ data }: { data: Performance }) {
           </div>
         }
       >
+        <Notice>
+          You can start tracking now even if old deposit history is unavailable.
+          Save a current snapshot in Replay, then record deposits and
+          withdrawals in Transactions. Verify the net external flow for each new
+          snapshot interval below. The return chart starts at the latest
+          uninterrupted verified period; lifetime contributions remain unknown
+          until supplied.
+        </Notice>
         {chart.length ? (
           <Bars data={chart} percent />
         ) : (
@@ -80,7 +88,7 @@ export function PerformanceDetails({ data }: { data: Performance }) {
           </Notice>
           <form onSubmit={save}>
             <Field label="Interval ending at snapshot">
-              <select name="snapshot">
+              <select name="snapshot" defaultValue={data.snapshots.at(-1)?.id}>
                 {data.snapshots.slice(1).map((s) => (
                   <option key={s.id} value={s.id}>
                     {dateLabel(s.date)} · {s.source}

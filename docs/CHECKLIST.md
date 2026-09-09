@@ -24,6 +24,11 @@
 - [x] Clean private GitHub repository uploaded; no hosting connected. SQLite, PostgreSQL, browser and Docker-build CI jobs all passed.
 
 ## Acceptance criteria
+- [x] Enable approved local portfolio quote refreshes and observed position snapshots while the app runs; show dated partial P/L with explicit invested-value coverage.
+- [x] Replay supports authenticated idempotent manual capture; new verified return periods can start after legacy gaps and retain their last verified endpoint.
+- [x] Forward-tracking regression suite (80 backend tests) and two desktop/mobile browser journeys pass locally.
+- [ ] Runtime Google credential remains required for unattended source-sheet sync; connector readback alone is insufficient.
+- [ ] Real forward TWR awaits a later observed valuation and user-verified cash flow. User confirms historical deposits were not tracked; lifetime contribution return cannot be reconstructed from current cost basis.
 - [x] Add free no-key daily historical prices independently of Finnhub, with source-aware caching, benchmark routing, validation and regression tests.
 - An unauthenticated user cannot retrieve private data; CSRF, expired sessions, invalid login and logout are tested.
 - Fictional seed is opt-in, visibly labeled and never mixed with live holdings. No real financial records enter Git.

@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
@@ -11,8 +13,30 @@ from .routes import router
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
 )
+
+
+@asynccontextmanager
+async def lifespan(app):
+    task = None
+    if get_settings().background_jobs and not get_settings().demo_mode:
+        from .jobs import background_loop
+
+        task = asyncio.create_task(background_loop())
+    yield
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
 app = FastAPI(
-    title="Folio Private Terminal", docs_url=None, redoc_url=None, openapi_url=None
+    title="Folio Private Terminal",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+    lifespan=lifespan,
 )
 app.add_middleware(
     TrustedHostMiddleware, allowed_hosts=get_settings().allowed_hosts.split(",")

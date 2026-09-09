@@ -288,6 +288,12 @@ export function SettingsPage() {
             <dd>USD</dd>
             <dt>Database</dt>
             <dd>{s.database}</dd>
+            <dt>Automatic prices & snapshots</dt>
+            <dd>
+              {s.background_jobs
+                ? "Enabled while the app runs"
+                : "Use the separate worker or enable server background jobs"}
+            </dd>
             <dt>Data mode</dt>
             <dd>{s.demo ? "Fictional demo" : "Private portfolio"}</dd>
             <dt>Authentication</dt>

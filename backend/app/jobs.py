@@ -1,6 +1,7 @@
 """Portable single-worker scheduler or one-shot commands for cron/Task Scheduler."""
 
 import argparse
+import asyncio
 import logging
 import time
 from datetime import date, datetime
@@ -14,6 +15,39 @@ from .sync import sync_portfolio, take_snapshot, lease
 from .config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def background_cycle():
+    """Local-app refresh: source first, quotes second, observed snapshot last."""
+    settings = get_settings()
+    with SessionLocal() as db:
+        users = list(db.scalars(select(User.id)))
+    for user_id in users:
+        jobs = []
+        if settings.google_sheet_id and settings.google_application_credentials:
+            jobs.append("sync")
+        if settings.market_provider != "disabled" and settings.market_api_key:
+            jobs.append("quote")
+        jobs.append("snapshot")
+        for job in jobs:
+            try:
+                run(job, user_id)
+            except Exception as exc:
+                logger.warning(
+                    "background job=%s error_type=%s", job, type(exc).__name__
+                )
+    # SPY is the fixed benchmark, independent of the private holdings list.
+    try:
+        with SessionLocal() as db:
+            cached(db, "history", "SPY")
+    except Exception as exc:
+        logger.warning("background benchmark error_type=%s", type(exc).__name__)
+
+
+async def background_loop():
+    while True:
+        await asyncio.to_thread(background_cycle)
+        await asyncio.sleep(get_settings().sync_interval_minutes * 60)
 
 
 def market_job(user_id, kind):

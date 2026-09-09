@@ -37,6 +37,56 @@ def portfolio(db, user_id):
             }
         )
     result = summarize(positions)
+    # Keep today's strict whole-book metric, but also expose a clearly dated,
+    # aligned subset. Do not mix quotes from different sessions or count cash
+    # as evidence that a market quote exists.
+    dated = db.execute(
+        select(Holding, Asset).join(Asset).where(Holding.user_id == user_id)
+    ).all()
+    quoted_day = max(
+        (
+            h.daily_date
+            for h, a in dated
+            if a.asset_type != "cash"
+            and h.daily_change is not None
+            and h.daily_date is not None
+            and h.daily_date <= today
+        ),
+        default=None,
+    )
+    aligned = {
+        h.id: h
+        for h, a in dated
+        if a.asset_type != "cash"
+        and quoted_day is not None
+        and h.daily_date == quoted_day
+        and h.daily_change is not None
+    }
+    covered_value = sum((h.value for h in aligned.values()), Decimal(0))
+    quoted_change = (
+        sum((h.daily_change for h in aligned.values()), Decimal(0)) if aligned else None
+    )
+    for position in positions:
+        position["quoted_change"] = (
+            aligned[position["id"]].daily_change if position["id"] in aligned else None
+        )
+    result["quoted_day"] = quoted_day
+    result["quoted_change"] = quoted_change
+    previous_value = (
+        covered_value - quoted_change if quoted_change is not None else None
+    )
+    result["quoted_pct"] = (
+        quoted_change / previous_value
+        if previous_value and previous_value > 0
+        else None
+    )
+    result["quoted_coverage"] = (
+        covered_value / result["invested"] if result["invested"] > 0 else None
+    )
+    result["quoted_positions"] = len(aligned)
+    result["unquoted_positions"] = sum(a.asset_type != "cash" for _, a in dated) - len(
+        aligned
+    )
     transactions = db.scalars(
         select(Transaction).where(Transaction.user_id == user_id)
     ).all()
@@ -123,7 +173,20 @@ def history(db, user_id):
 
 def performance(db, user_id):
     points = history(db, user_id)
-    twr = time_weighted(points)
+    # A new verified track record can begin after incomplete legacy history.
+    # Always disclose its actual start and align the benchmark to that date.
+    end = len(points) - 1
+    while end > 0 and points[end]["external_flow"] is None:
+        end -= 1
+    start = 0
+    for index, point in enumerate(points[1 : end + 1], 1):
+        if point["external_flow"] is None:
+            start = index
+    return_points = points[start : end + 1]
+    twr = time_weighted(return_points)
+    twr["start_date"] = return_points[0]["date"] if len(return_points) > 1 else None
+    twr["end_date"] = return_points[-1]["date"] if len(return_points) > 1 else None
+    twr["excluded_snapshots"] = len(points) - len(return_points)
     from .models import HistoricalPrice
 
     prices = db.scalars(
@@ -136,12 +199,15 @@ def performance(db, user_id):
     ).all()
     price_map = {p.date: p.close for p in prices}
     # Only match exact valuation dates; no forward-filling, mismatched inception, or price-as-total-return.
-    first = points[0]["date"] if points else None
+    first = twr["start_date"] or (points[0]["date"] if points else None)
     baseline = price_map.get(first)
     for p in points:
         p["benchmark_return"] = (
             price_map[p["date"]] / baseline - 1
-            if baseline and p["date"] in price_map
+            if baseline
+            and p["date"] >= first
+            and p["date"] in price_map
+            and (twr["end_date"] is None or p["date"] <= twr["end_date"])
             else None
         )
     grouped, weekly = {}, {}
@@ -172,7 +238,13 @@ def analytics(db, user_id):
 
     p, perf = portfolio(db, user_id), performance(db, user_id)
     weights = p["position_allocation"]
-    dates = [r["date"] for r in perf["snapshots"]]
+    dates = [
+        r["date"]
+        for r in perf["snapshots"]
+        if perf["twr"]["start_date"]
+        and r["date"] >= perf["twr"]["start_date"]
+        and r["date"] <= perf["twr"]["end_date"]
+    ]
     daily_frequency = len(dates) >= 31 and all(
         0 < (b - a).days <= 4 for a, b in zip(dates, dates[1:])
     )

@@ -167,6 +167,10 @@ The initial migration explicitly creates the normalized schema and integrity con
 
 ## Scheduled jobs
 
+For a single local API process, set `BACKGROUND_JOBS=true` in `backend/.env` and restart the app. While the app runs it refreshes public holding/watchlist quotes, then saves the current day's position snapshot every `SYNC_INTERVAL_MINUTES` (15 by default). It also checks the fixed SPY history cache. Google sync runs first only when runtime Google credentials are configured. This mode pauses when the server/computer stops; it does not install a Windows service. Settings displays whether this mode is enabled. Use **one** scheduling mode: keep this flag false when using the separate worker below.
+
+Replay also provides **Save current snapshot**, which saves the current stored valuation without requesting new quotes. It updates the same day's record rather than inventing additional history.
+
 Run **one** scheduler process separately from the API:
 
 ```bash
